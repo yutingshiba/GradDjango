@@ -61,7 +61,8 @@ MIDDLEWARE = [
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.TokenAuthentication',  # <-- And here
+        #'rest_framework.authentication.TokenAuthentication',  # <-- And here
+        'users.authentication.ExpiringTokenAuthentication',  # <-- And here
     ],
 }
 
@@ -135,3 +136,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/2.2/howto/static-files/
 
 STATIC_URL = '/static/'
+
+# Token expired time
+TOKEN_EXPIRED_AFTER_SECONDS = 86400
+TOKEN_CREATED_TOO_LONG = 86400 * 7

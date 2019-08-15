@@ -1,16 +1,20 @@
-from django.shortcuts import render
+from rest_framework import status
 from rest_framework import permissions
-from rest_framework.authtoken.models import Token
 from rest_framework.views import APIView
 from rest_framework.generics import CreateAPIView
 from rest_framework.response import Response
-from django.contrib.auth import get_user_model  # If used custom user model
+from rest_framework.permissions import IsAuthenticated
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import AnonymousUser
 
 from .serializers import UserSerializer
+from .models import CustomToken
 
 UserModel = get_user_model()
-# Create your views here.
-class CreateUserView(CreateAPIView):
+
+
+class SignUpView(CreateAPIView):
+    """Create an user with given email and password."""
 
     model = get_user_model()
     permission_classes = [
@@ -19,13 +23,33 @@ class CreateUserView(CreateAPIView):
     serializer_class = UserSerializer
 
 
-class GetTokenView(APIView):
+class LogInView(APIView):
+    """Log in with email and password."""
 
     def get(self, request):
-        uname = request.query_params.get('uname', '')
+        email = request.query_params.get('email', '')
+        password = request.query_params.get('password', None)
         try:
-            user = UserModel.objects.get(username=uname)
+            user = UserModel.objects.get(email=email)
         except UserModel.DoesNotExist:
-            return Response('User not exist')
-        token, created = Token.objects.get_or_create(user=user)
-        return Response(token.key)
+            return Response('Email does not exist.')
+        if not user.check_password(password):
+            return Response('Incorrect password.')
+
+        # Always renew token after login
+        token, created = CustomToken.objects.get_or_create(user=user)
+        if not created:
+            token.delete()
+            token, created = CustomToken.objects.get_or_create(user=user)
+            token.save()  # Update lastused field
+
+        return Response('{};;;{}'.format(token.key, created))
+
+
+class LogOutView(APIView):
+
+    def get(self, request):
+        if not isinstance(request.user, AnonymousUser):
+            token, created = CustomToken.objects.get_or_create(user=request.user)
+            token.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
