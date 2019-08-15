@@ -5,9 +5,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth import get_user_model # If used custom user model
 
-from users.serializers import UserSerializer
-
-# Create your views here.
+from users.models import CustomToken
 
 
 class GetData(APIView):
